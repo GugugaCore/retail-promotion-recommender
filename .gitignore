@@ -1,0 +1,27 @@
+# Credentials and local configuration
+*.json
+!.vscode/*.json
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Generated data and model artifacts
+data/
+artifacts/
+*.csv
+*.parquet
+*.pkl
+*.joblib
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

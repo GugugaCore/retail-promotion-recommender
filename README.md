@@ -1,85 +1,141 @@
-# Recommender-System
-Background
+<div align="center">
 
-ACSE Supermarket, a company that sells everything, has over 40 stores in North America and sells over 100 thousand products in over 100 categories.  ACSE customers can opt to join the ACSE Rewards program to avail of weekly sales and promotions.  ACSE has determined that they can use a recommender system to help inform decisions such as products to carry in stores, shelf space allocation to products, products to promote to customers, reorder level of products, order quantity of products, etc. 
+# Retail Promotion Recommender System
 
-Problem
+**A data-to-decision pipeline for personalized cross-brand promotions at supermarket scale.**
 
-Your analytics consulting firm is being considered by ACSE (the client) to build a recommender system in support of various usage in supply chain and logistics, store operations, supplier relations, pricing, promotions and marketing.  While the details of the business problem is still being defined, you have started to receive data from the client.  You have three weeks to analyze and understand the data, including text mining the descriptions of the products, and report back initial insights to the client.  In order to be selected as the sole-developer of the recommender system, your team needs to demonstrate that you know the data very well, i.e., you need to show the client that you know the profiles of their stores, products and customers better than they do and are ready to take on the task of developing the recommender system. 
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![BigQuery](https://img.shields.io/badge/Google_BigQuery-Data_Warehouse-4285F4?logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-Modeling-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
+[![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-F37626?logo=jupyter&logoColor=white)](https://jupyter.org/)
 
-From the client’s point of view, they need to be confident that you know the answers to the following key questions:
+</div>
 
-Who are the best customers in terms of revenues, profits, transactions/store visits, number of products, etc.?
+## Overview
 
-What are the products and product groups with the best volumes, revenues, profits, transactions, customers, etc.?
+This project develops a personalized promotion strategy for a fictional North American supermarket. The business goal is to identify customers who purchase General Mills products and recommend relevant Kellogg's alternatives without targeting customers already buying competing private-label products.
 
-Which stores rank the highest in volumes, revenues, profits, transactions, customers, etc.?
+The work combines large-scale retail data preparation, customer segmentation, product-text quality checks, feature engineering, and three recommendation approaches:
 
-Are there interesting groupings of customers, e.g., most valuable (buy everything at any price) or cherry-pickers (buy mostly on promotions), defined by certain categories (buy baby products or never buy milk), etc.?
+- Content-based filtering
+- Collaborative filtering
+- Naive Bayes classification
 
-Other than product categories and sub-categories, are there other product groupings, e.g., Key Value Items (KVI) and Key Value Categories (KVC), traffic drivers, always promoted versus seldom/never promoted, etc.?
+The repository contains the analytical notebooks and two project reports produced for the **AI & ML at Scale** course at Emory University's Goizueta Business School.
 
-Are there natural groupings of stores, e.g., stores frequented by cherry-pickers versus stores visited by most loyal customers?
+## Results at a glance
 
-Are there problems with the data, e.g., missing data, problems with product descriptions, non-products, non-customers (who "buy" too much), stores with two few transactions, etc.? How did you address these problems?
+| Model | Recommendation accuracy | Transaction hit rate | Customer purchase rate |
+| --- | ---: | ---: | ---: |
+| Naive Bayes | 21.24% | **1.68%** | **72.64%** |
+| Content-based filtering | 20.77% | 0.42% | 57.39% |
+| Collaborative filtering | **25.36%** | 1.23% | 65.14% |
 
-Available Data
-There are two tables in the database:
+- **Best recommendation accuracy:** Collaborative filtering matched 25.36% of recommended products with later customer purchases.
+- **Best customer coverage:** 72.64% of evaluated customers purchased at least one item from the Naive Bayes top-five recommendations.
+- **Modeled business opportunity:** Applying the observed hit rate to the selected target cohort produced an estimated annual revenue opportunity of approximately **$3.27M**.
+- **Product-data quality:** Expanding the TF-IDF feature space from 500 to 5,000 reduced products flagged for manual category review from **2,235 to 163**.
 
-The transactions table contains transaction history in 2017, 2018, 2019 and 2020 for over 9 million customers
+> [!IMPORTANT]
+> The revenue figure is a model-based projection from historical analysis, not realized or experimentally validated revenue. The underlying course dataset is not included, so the published metrics have not been independently reproduced from this repository alone.
 
-cust_id – Customer ID: Format of 1######### represents a ACSE Rewards member
+## Analytical workflow
 
-store_id – Store ID
+```mermaid
+flowchart LR
+    A[BigQuery transactions<br/>and product metadata] --> B[Data quality and<br/>business-rule filtering]
+    B --> C[Customer and product<br/>feature engineering]
+    C --> D1[Content-based]
+    C --> D2[Collaborative filtering]
+    C --> D3[Naive Bayes]
+    D1 --> E[Top-five product<br/>recommendations]
+    D2 --> E
+    D3 --> E
+    E --> F[Offline evaluation and<br/>revenue scenario]
+```
 
-prod_id – Product ID
+### 1. Data understanding
 
-trans_id – Transaction ID
+- Analyzed multi-year transaction history and product metadata in BigQuery.
+- Removed non-recommendable products, invalid transactions, inactive customers, and anomalous stores.
+- Compared product, store, and customer performance across revenue, profit, visit, and volume measures.
 
-trans_dt – Transaction Date
+### 2. Segmentation and feature engineering
 
-sales_qty – Quantity/units of the product in the transaction
+- Identified General Mills customers who had not purchased the target Kellogg's products.
+- Selected promising product subcategories using association confidence and business relevance.
+- Engineered behavioral indicators for purchase frequency, spending, and value sensitivity.
 
-sales_wgt – Weight of the product in the transaction if sold by weight
+### 3. Product-text quality
 
-sales_amt – Sales amount for the product before discounts in the transaction
+- Cleaned and tokenized product descriptions with NLTK.
+- Used TF-IDF and Multinomial Naive Bayes to identify category-description mismatches.
+- Combined automated screening with manual review to account for spelling variants and false positives.
 
-The products table contains the product to subcategory and category mapping and descriptions for over 100,000 products
+### 4. Recommendation modeling
 
-prod_id – Product ID
+- **Content-based:** matched customer histories to product attributes using vector similarity.
+- **Collaborative filtering:** modeled normalized customer-product interactions with a sparse matrix.
+- **Naive Bayes:** estimated purchase propensity from engineered behavioral features.
 
-prod_desc – Product description
+## Evaluation
 
-prod_section – Product section description
+Each model generated five recommendations per customer. Performance was compared with three offline metrics:
 
-prod_category – Product category description
+- **Recommendation accuracy:** share of recommended products that matched later purchases.
+- **Transaction hit rate:** share of transactions containing a recommended product.
+- **Customer purchase rate:** share of customers purchasing at least one top-five recommendation.
 
-prod_subcategory – Product subcategory description
+Because the analysis is observational and offline, these metrics measure historical alignment rather than causal campaign lift. A production follow-up should validate the strategy with a randomized holdout experiment.
 
-prod_type – Product type description
+## Repository guide
 
-prod_mfc_brand_cd – Code representing the Product manufacturer/brand
+| Path | Purpose |
+| --- | --- |
+| `Recommender System.ipynb` | Feature engineering, three recommendation models, evaluation, and revenue scenario |
+| `Data Understanging & Text Mining/` | Supporting customer, product, store, and NLP analyses from the original submission |
+| `Reports/Data Understanding.pdf` | Data-quality, segmentation, store/product analysis, and text-mining report |
+| `Reports/Recommender System.pdf` | Modeling, evaluation, business scenario, and recommendations |
 
-prod_unit_qty_count  – Count per unit quantity of the Product
+> [!NOTE]
+> The directory names above currently preserve the original submission. A later cleanup will move notebooks into a consistent `notebooks/` structure while retaining Git history.
 
-prod_count_uom – Unit of measure (UOM) for a count of the Product
+## Running the notebooks
 
-prod_uom_value – Value UOM per count of the Product
+The original notebooks query BigQuery tables that are not publicly available. To adapt the project to your own data:
 
-Recommender System
+1. Create a Python environment and install the required analytical packages.
+2. Authenticate to Google Cloud with Application Default Credentials.
+3. Provide transaction and product tables matching the schemas below.
+4. Replace the `machine_learning.*` table references with your own fully qualified BigQuery tables.
 
-Your analytics consulting group has been tasked by ACSE to develop a recommender system for personalized promotions. Despite ongoing negotiations with suppliers, you have received the necessary data from the client. You have a three-week window to analyze the data and support the proposed marketing campaigns for May 2024.
+Expected transaction fields include customer, store, product, transaction, date, quantity, weight, and sales amount. Expected product fields include product description, hierarchy, brand, package quantity, and unit-of-measure attributes.
 
-Kellogg: Target customers purchasing General Mills products for a personalized promotion.
+Never commit a Google Cloud service-account JSON file. Prefer:
 
-Kimberly-Clark: Create a promotion targeting customers currently buying competing baby care brands to promote Huggies.
+```bash
+gcloud auth application-default login
+```
 
-Molson Coors: Determine if targeting Budweiser customers can increase Molson product sales.
+and initialize the client with:
 
-Nestle: Devise a strategy to promote confectionery/chocolate products and expand market share in the category.
+```python
+from google.cloud import bigquery
 
-Unilever: Identify specific Dove products for promotion to increase overall brand sales.
+client = bigquery.Client()
+```
 
-Coca-Cola: Plan a personalized campaign targeting customers purchasing from other carbonated soft drink (CSD) brands.
+## Limitations and next steps
 
-For each campaign, ACSE prohibits targeting customers buying competing ACSE branded products. Your task includes providing a personalized promotion plan for each campaign, specifying the targeted customers and the promoted product.
+- The source data is unavailable publicly, limiting end-to-end reproducibility.
+- Current evaluation is offline and does not establish incremental causal lift.
+- Very sparse customer-product interactions limit transaction-level hit rates.
+- The projected revenue depends on historical conversion assumptions.
+- A hybrid recommender should combine collaborative-filtering accuracy with the Naive Bayes customer coverage.
+- Production validation should include temporal splits, ranking metrics, calibration checks, and an A/B or geo-holdout experiment.
+
+## Project context and attribution
+
+This was a team project completed for Emory University's Goizueta Business School. Contributors listed in the original reports are Lanston Chen, Songbo Hu, Kedi Lin, Jie Mei, Jayson Xu, and Wenxi Xu.
+
+The retailer and campaign scenario are presented as a case study. No proprietary source data is distributed in this repository.
